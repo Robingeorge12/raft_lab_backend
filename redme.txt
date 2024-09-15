@@ -1,0 +1,112 @@
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmU1MmEzMWU1N2E1OGFlZGY2YzMyMTEiLCJlbWFpbCI6InJAZ21haWwuY29tIiwiaWF0IjoxNzI
+2MzMxMTUyLCJleHAiOjE3MjY5MzU5NTJ9.TY66ltcRo_7vHs0BLce26BQu-e8iNkHadWo_7WEajXc
+
+
+admin =eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmU2NDM4MWVmZGM1YjEyMWRkMWQyMWEiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmN
+vbSIsImlhdCI6MTcyNjM2NjYxNiwiZXhwIjoxNzI2OTcxNDE2fQ.LLmeL7w1Lq93Y_okTyHDMsQjVR3bT9c8gU4lIwGzLUQ
+
+
+
+export const get_todo_List = async (req, res) => {
+  try {
+    // Extract query parameters for search, sorting, pagination
+    const { page = 1, limit = 5, sortVal, sortOrder, searchVal } = req.query;
+    
+    // Pagination: Set limit for number of items per page
+    const set_limit = parseInt(limit); // Ensure limit is an integer
+
+    // Build sort options based on sortVal and sortOrder
+    let sortOption = {};
+
+    if (sortVal && sortOrder && sortVal !== "all") {
+      sortOption[sortVal] = sortOrder === "asc" ? 1 : -1; // 1 for ascending, -1 for descending
+    }
+
+    // Query object for search functionality (if you want to add search here)
+    const query = {};
+
+    if (searchVal) {
+      query.$or = [
+        { title: { $regex: searchVal, $options: "i" } },
+        { description: { $regex: searchVal, $options: "i" } }
+      ];
+    }
+
+    // Pagination and sorting: Skip items based on current page and limit, apply sorting
+    const skip = (page - 1) * set_limit;
+
+    // Fetch todos from the database
+    const list_all_todos = await Todo_Model.find(query)
+      .sort(sortOption) // Apply sorting if provided
+      .skip(skip) // Pagination: Skip previous pages' items
+      .limit(set_limit); // Limit results to specified number per page
+
+    // Get total number of todos for pagination metadata
+    const totalTodos = await Todo_Model.countDocuments(query);
+
+    return res.status(200).send({
+      todos: list_all_todos,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalTodos / set_limit),
+      totalTodos
+    });
+  } catch (error) {
+    return res.status(400).send({ message: "Can't display todos", error });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+export const get_todo_List = async (req, res) => {
+  try {
+    const { page = 1, limit = 5, sortVal = 'date', sortOrder = 'asc', searchVal } = req.query;
+
+    let set_limit = parseInt(limit) || 5; // Default limit set to 5
+    let sortOption = {};
+
+    // Handle sorting logic based on sortVal and sortOrder
+    if (sortVal === 'all') {
+      // If 'all', we don't apply any sort (unordered)
+      sortOption = {};
+    } else if (sortVal === 'date') {
+      // If sorting by date, sort by 'createdAt' field
+      sortOption.createdAt = sortOrder === 'asc' ? 1 : -1; // Ascending or Descending
+    }
+
+    // Pagination setup
+    const skip = (page - 1) * set_limit;
+
+    // Build the query for searching (if needed)
+    let query = {};
+    if (searchVal) {
+      query.$or = [
+        { title: { $regex: searchVal, $options: 'i' } },  // Search by title
+        { description: { $regex: searchVal, $options: 'i' } }  // Search by description
+      ];
+    }
+
+    // Fetch todos with sorting, pagination, and optional search
+    const todos = await Todo_Model.find(query)
+      .sort(sortOption) // Apply sorting
+      .skip(skip)
+      .limit(set_limit);
+
+    const totalTodos = await Todo_Model.countDocuments(query); // For pagination metadata
+
+    return res.status(200).send({
+      todos,
+      currentPage: page,
+      totalPages: Math.ceil(totalTodos / set_limit),
+      totalTodos
+    });
+  } catch (error) {
+    return res.status(400).send({ message: "Error fetching todos", error });
+  }
+};
