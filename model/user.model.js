@@ -11,7 +11,7 @@ const userSchemaCreator = new Schema({
     trim: true,
   },
   
-  role:{ type: String,enum:["admin"] ,default: "student"},
+  // role:{ type: String,enum:["admin"] ,default: "student"},
   password: {
     type: String,
     required: [true, "Enter Valid Password"],
